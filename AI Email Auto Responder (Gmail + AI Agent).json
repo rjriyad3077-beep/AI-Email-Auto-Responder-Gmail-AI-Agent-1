@@ -1,0 +1,220 @@
+{
+  "name": "AI Email Auto Responder (Gmail + AI Agent)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dbde5eb7-efe6-40f6-a702-e6c9bdd66a9b",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "arIFwef3IbI8kWo6",
+          "name": "Gmail account 304"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a27e0734-92ce-4a94-b8e1-daf6f957d191",
+              "leftValue": "={{ $json.labels[3].id }}",
+              "rightValue": "UNREAD",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6d50e1f8-7cf9-4aed-a0e3-cd02c36df040",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Heare are the Email Deatails:\nSubject:{{ $('Gmail Trigger').item.json.Subject }}\nFrom :{{ $('Gmail Trigger').item.json.From }}\nTO {{ $('Gmail Trigger').item.json.To }}\nMessege Body {{ $('Gmail Trigger').item.json.snippet }}",
+        "options": {
+          "systemMessage": "You are an AI email assistant responsible for automatically replying to incoming emails on behalf of the user.\n\nYour responsibilities:\n- Read and understand the incoming email message.\n- Detect the intent, tone, and purpose of the email.\n- Generate a clear, polite, and professional reply.\n- Keep responses concise and relevant.\n- If the email requires acknowledgment, provide a confirmation reply.\n- If the request needs further action, respond appropriately and mention next steps.\n- If the message is unclear, politely ask for clarification.\n\nGuidelines:\n- Always maintain a professional and friendly tone.\n- Do not generate unnecessary long responses.\n- Avoid repeating the original message.\n- Use simple and clear language.\n- If the email is in another language, reply in the same language.\n\nSpecial Instructions:\n- If the email is a business inquiry → respond formally.\n- If it's a support request → acknowledge and provide help or next steps.\n- If it's a meeting request → confirm availability or ask for schedule details.\n- If it's spam or irrelevant → respond briefly or ignore based on context.\n\nOutput format:\n- Only return the email reply text.\n- Do not include explanations or metadata."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "6d504697-0edf-4328-8ec2-db27b2afff27",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        208
+      ],
+      "id": "df4398cb-bed5-4fd4-a38a-09842de88403",
+      "name": "Send a message in Gmail",
+      "webhookId": "845e380e-7e33-437a-9700-131072fbebb3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "arIFwef3IbI8kWo6",
+          "name": "Gmail account 304"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        288,
+        208
+      ],
+      "id": "005e8fb1-fc87-45fb-9ab9-3f7971dba2e0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SZUSQPwsvK8zTisW",
+          "name": "Google Gemini(PaLM) Api account 362"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Filter').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "4f5f6801-f3fb-4c89-9159-8bd821a53a4c",
+      "name": "Mark a message as read",
+      "webhookId": "7cb6428b-2f80-446c-a01d-703314c0fbf5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "arIFwef3IbI8kWo6",
+          "name": "Gmail account 304"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bb52711c-e6dd-4c3e-9505-e41bbe73387b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "50918ee0be4fd9ad8edd59da0eb4c4a6502c186d6a425a1cf635ba824838446e"
+  },
+  "id": "saHfu1G1W0lWUZNY",
+  "tags": []
+}
